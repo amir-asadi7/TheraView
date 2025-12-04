@@ -4,9 +4,9 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 ## Roadmap
 
 ### Stage 1: Single Camera Unit *(Current Stage)*
-- Install Raspberry Pi OS Lite [x]
-- Verify 1080p at 30 FPS capture with MJPG [x]
-- Add GStreamer preview output to an HTML page [x]
+-[x] Install Raspberry Pi OS Lite 
+-[x] Verify 1080p at 30 FPS capture with MJPG
+-[x] Add GStreamer preview output to an HTML page
 - Confirm recording stability 
 - Test power bank duration 
 - Add the first enclosure design
@@ -86,18 +86,6 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 ---
 
 
-## Project Status
-
-**Current Stage:** Stage 1  
-Focus areas: stable 1080p 30 FPS capture, live preview through GStreamer to a html page, and core system validation.
-
----
-
----
-
-## License
-
-**[Placeholder: License type to be added, e.g., MIT, Apache 2.0, etc.]**
 
 ---
 
