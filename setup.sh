@@ -3,12 +3,12 @@
 set -e
 
 echo "======================================="
-echo "      TheraView Setup Script
-======================================="
+echo "      TheraView Setup Script"
+echo "======================================="
 
 TV_PATH="$(pwd)"
 HOSTNAME="$(hostname)"
-CONFIG_FILE="config.conf"
+CONFIG_FILE="./config.conf"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Missing config file: $CONFIG_FILE"
@@ -48,20 +48,21 @@ mkdir -p recordings
 # ---------------------
 # Systemd setup
 # ---------------------
+
 SERVICE_FILE="/etc/systemd/system/theraview.service"
 
 if [ "$ENABLE_SYSTEMD" = "true" ]; then
     echo "[6] Creating systemd service..."
 
-    sudo bash -c "cat > $SERVICE_FILE" << 'EOF'
+    sudo bash -c "cat > $SERVICE_FILE" << EOF
 [Unit]
 Description=TheraView Capture Server
 After=network.target
 
 [Service]
-ExecStart=/home/pi/TheraView/scripts/theraview
-WorkingDirectory=/home/pi/TheraView
-User=pi
+ExecStart=${TV_PATH}/scripts/theraview
+WorkingDirectory=${TV_PATH}
+User=${USER}
 Restart=always
 Environment=PYTHONUNBUFFERED=1
 
@@ -90,10 +91,10 @@ else
     fi
 fi
 
-
 # ---------------------
 # Hotspot setup
 # ---------------------
+
 THERA_NET="TheraView"
 PRECONFIGURED_NET="preconfigured"
 
@@ -101,48 +102,44 @@ if [ "$ENABLE_HOTSPOT" = "true" ]; then
     echo "[7] Hotspot enabled."
 
     nmcli device wifi rescan
-    if [ "$HOSTNAME" = "TVA" ]; then
 
+    if [ "$HOSTNAME" = "TVA" ]; then
         echo "TVA detected. Creating hotspot."
-    
+
         nmcli connection delete "$THERA_NET" 2>/dev/null || true
-    
+
         nmcli connection add type wifi ifname "$WIFI_IFACE" \
             con-name "$THERA_NET" autoconnect yes ssid "$THERA_NET"
-    
+
         nmcli connection modify "$THERA_NET" wifi.mode ap
         nmcli connection modify "$THERA_NET" wifi.band bg
         nmcli connection modify "$THERA_NET" wifi.channel 6
         nmcli connection modify "$THERA_NET" wifi-sec.key-mgmt wpa-psk
         nmcli connection modify "$THERA_NET" wifi-sec.psk "ritaengs"
-    
-        # Static IP for the hotspot
+
         nmcli connection modify "$THERA_NET" ipv4.method manual
         nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.1/24"
         nmcli connection modify "$THERA_NET" ipv4.gateway ""
         nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
-    
+
         nmcli connection up "$THERA_NET"
 
+    elif [ "$HOSTNAME" = "TVB" ]; then
+        echo "TVB detected. Creating hotspot client."
 
-elif [ "$HOSTNAME" = "TVB" ]; then
-    echo "TVB detected. Setting up hotspot client."
+        nmcli connection delete "$THERA_NET" 2>/dev/null || true
 
-    nmcli connection delete "$THERA_NET" 2>/dev/null || true
+        nmcli connection add type wifi ifname "$WIFI_IFACE" \
+            con-name "$THERA_NET" ssid "$THERA_NET" \
+            wifi-sec.key-mgmt wpa-psk wifi-sec.psk "ritaengs" autoconnect yes
 
-    nmcli connection add type wifi ifname "$WIFI_IFACE" \
-        con-name "$THERA_NET" ssid "$THERA_NET" \
-        wifi-sec.key-mgmt wpa-psk wifi-sec.psk "ritaengs" autoconnect yes
+        nmcli connection modify "$THERA_NET" ipv4.method manual
+        nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.2/24"
+        nmcli connection modify "$THERA_NET" ipv4.gateway "10.10.10.1"
+        nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
 
-    # Static IP for TVB client
-    nmcli connection modify "$THERA_NET" ipv4.method manual
-    nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.2/24"
-    nmcli connection modify "$THERA_NET" ipv4.gateway "10.10.10.1"
-    nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
-
-    nmcli connection up "$THERA_NET" || true
-fi
-
+        nmcli connection up "$THERA_NET" || true
+    fi
 
 else
     echo "[7] Hotspot disabled. Removing hotspot profiles if present."
@@ -162,8 +159,8 @@ else
     fi
 fi
 
-
 echo ""
 echo "======================================="
 echo "      TheraView setup complete"
 echo "======================================="
+
