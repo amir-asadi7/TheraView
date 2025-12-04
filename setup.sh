@@ -101,44 +101,48 @@ if [ "$ENABLE_HOTSPOT" = "true" ]; then
     echo "[7] Hotspot enabled."
 
     nmcli device wifi rescan
-
     if [ "$HOSTNAME" = "TVA" ]; then
+
         echo "TVA detected. Creating hotspot."
-
+    
         nmcli connection delete "$THERA_NET" 2>/dev/null || true
-
+    
         nmcli connection add type wifi ifname "$WIFI_IFACE" \
             con-name "$THERA_NET" autoconnect yes ssid "$THERA_NET"
-
+    
         nmcli connection modify "$THERA_NET" wifi.mode ap
         nmcli connection modify "$THERA_NET" wifi.band bg
         nmcli connection modify "$THERA_NET" wifi.channel 6
         nmcli connection modify "$THERA_NET" wifi-sec.key-mgmt wpa-psk
         nmcli connection modify "$THERA_NET" wifi-sec.psk "ritaengs"
-        nmcli connection modify "$THERA_NET" ipv4.method shared
-
+    
+        # Static IP for the hotspot
+        nmcli connection modify "$THERA_NET" ipv4.method manual
+        nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.1/24"
+        nmcli connection modify "$THERA_NET" ipv4.gateway ""
+        nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
+    
         nmcli connection up "$THERA_NET"
 
-    elif [ "$HOSTNAME" = "TVB" ]; then
-        echo "TVB detected. Connecting to hotspot."
 
-        nmcli device wifi rescan
+elif [ "$HOSTNAME" = "TVB" ]; then
+    echo "TVB detected. Setting up hotspot client."
 
-        if nmcli device wifi list | grep -q "$THERA_NET"; then
-            nmcli connection delete "$THERA_NET" 2>/dev/null || true
+    nmcli connection delete "$THERA_NET" 2>/dev/null || true
 
-            nmcli connection add type wifi ifname "$WIFI_IFACE" \
-                con-name "$THERA_NET" ssid "$THERA_NET" \
-                wifi-sec.key-mgmt wpa-psk wifi-sec.psk "ritaengs" autoconnect yes
+    nmcli connection add type wifi ifname "$WIFI_IFACE" \
+        con-name "$THERA_NET" ssid "$THERA_NET" \
+        wifi-sec.key-mgmt wpa-psk wifi-sec.psk "ritaengs" autoconnect yes
 
-            nmcli connection up "$THERA_NET" || true
-        else
-            echo "Hotspot not visible. Waiting for TVA to broadcast."
-        fi
+    # Static IP for TVB client
+    nmcli connection modify "$THERA_NET" ipv4.method manual
+    nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.2/24"
+    nmcli connection modify "$THERA_NET" ipv4.gateway "10.10.10.1"
+    nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
 
-    else
-        echo "Hostname not TVA or TVB. Skipping hotspot steps."
-    fi
+    nmcli connection up "$THERA_NET" || true
+fi
+
 
 else
     echo "[7] Hotspot disabled. Removing hotspot profiles if present."
