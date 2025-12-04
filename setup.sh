@@ -94,66 +94,65 @@ fi
 # ---------------------
 # Hotspot setup
 # ---------------------
-
 THERA_NET="TheraView"
 PRECONFIGURED_NET="preconfigured"
 
 if [ "$ENABLE_HOTSPOT" = "true" ]; then
     echo "[7] Hotspot enabled."
 
-    nmcli device wifi rescan
+    sudo nmcli device wifi rescan
 
     if [ "$HOSTNAME" = "TVA" ]; then
         echo "TVA detected. Creating hotspot."
 
-        nmcli connection delete "$THERA_NET" 2>/dev/null || true
+        sudo nmcli connection delete "$THERA_NET" 2>/dev/null || true
 
-        nmcli connection add type wifi ifname "$WIFI_IFACE" \
+        sudo nmcli connection add type wifi ifname "$WIFI_IFACE" \
             con-name "$THERA_NET" autoconnect yes ssid "$THERA_NET"
 
-        nmcli connection modify "$THERA_NET" wifi.mode ap
-        nmcli connection modify "$THERA_NET" wifi.band bg
-        nmcli connection modify "$THERA_NET" wifi.channel 6
-        nmcli connection modify "$THERA_NET" wifi-sec.key-mgmt wpa-psk
-        nmcli connection modify "$THERA_NET" wifi-sec.psk "ritaengs"
+        sudo nmcli connection modify "$THERA_NET" wifi.mode ap
+        sudo nmcli connection modify "$THERA_NET" wifi.band bg
+        sudo nmcli connection modify "$THERA_NET" wifi.channel 6
+        sudo nmcli connection modify "$THERA_NET" wifi-sec.key-mgmt wpa-psk
+        sudo nmcli connection modify "$THERA_NET" wifi-sec.psk "ritaengs"
 
-        nmcli connection modify "$THERA_NET" ipv4.method manual
-        nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.1/24"
-        nmcli connection modify "$THERA_NET" ipv4.gateway ""
-        nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
+        sudo nmcli connection modify "$THERA_NET" ipv4.method manual
+        sudo nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.1/24"
+        sudo nmcli connection modify "$THERA_NET" ipv4.gateway ""
+        sudo nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
 
-        nmcli connection up "$THERA_NET"
+        sudo nmcli connection up "$THERA_NET"
 
     elif [ "$HOSTNAME" = "TVB" ]; then
-        echo "TVB detected. Creating hotspot client."
+        echo "TVB detected. Setting up hotspot client."
 
-        nmcli connection delete "$THERA_NET" 2>/dev/null || true
+        sudo nmcli connection delete "$THERA_NET" 2>/dev/null || true
 
-        nmcli connection add type wifi ifname "$WIFI_IFACE" \
+        sudo nmcli connection add type wifi ifname "$WIFI_IFACE" \
             con-name "$THERA_NET" ssid "$THERA_NET" \
             wifi-sec.key-mgmt wpa-psk wifi-sec.psk "ritaengs" autoconnect yes
 
-        nmcli connection modify "$THERA_NET" ipv4.method manual
-        nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.2/24"
-        nmcli connection modify "$THERA_NET" ipv4.gateway "10.10.10.1"
-        nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
+        sudo nmcli connection modify "$THERA_NET" ipv4.method manual
+        sudo nmcli connection modify "$THERA_NET" ipv4.addresses "10.10.10.2/24"
+        sudo nmcli connection modify "$THERA_NET" ipv4.gateway "10.10.10.1"
+        sudo nmcli connection modify "$THERA_NET" ipv4.dns "8.8.8.8 1.1.1.1"
 
-        nmcli connection up "$THERA_NET" || true
+        sudo nmcli connection up "$THERA_NET" || true
     fi
 
 else
     echo "[7] Hotspot disabled. Removing hotspot profiles if present."
 
-    if nmcli connection show | grep -q "$THERA_NET"; then
+    if sudo nmcli connection show | grep -q "$THERA_NET"; then
         echo "Removing TheraView connection."
-        nmcli connection delete "$THERA_NET" 2>/dev/null || true
+        sudo nmcli connection delete "$THERA_NET" 2>/dev/null || true
     fi
 
-    nmcli device wifi rescan
+    sudo nmcli device wifi rescan
 
-    if nmcli device wifi list | grep -q "$PRECONFIGURED_NET"; then
+    if sudo nmcli device wifi list | grep -q "$PRECONFIGURED_NET"; then
         echo "Preconfigured network found. Connecting."
-        nmcli connection up "$PRECONFIGURED_NET" || true
+        sudo nmcli connection up "$PRECONFIGURED_NET" || true
     else
         echo "Preconfigured network not found."
     fi
