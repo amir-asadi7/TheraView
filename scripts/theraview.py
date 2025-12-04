@@ -14,7 +14,7 @@ import socket
 # Settings
 # ----------------------------
 
-CONFIG_FILE = "theraview.config"
+CONFIG_FILE = "./config/theraview.config"
     
 def load_config(path):
     cfg = {}

@@ -125,7 +125,10 @@ If hostname lookup does not work, find the device IP with a network scanner and 
 After you connect to the RPi
 
 ```
-sudo apt install git
+sudo apt update -y
+sudo apt upgrade -y
+sudo apt install git -y
+
 git clone [https://github.com/NeuroRehack/TheraView](https://github.com/NeuroRehack/TheraView)
 cd TheraView
 chmod +x scripts/setup.sh
