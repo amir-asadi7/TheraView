@@ -46,7 +46,7 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 ---
 
 
-## Hardware used for development
+## Hardware
 
 - **Raspberry Pi 4B**
 - **Microsoft LifeCam Studio**  
@@ -57,7 +57,7 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 - **Cooling fan for Raspberry Pi**
 - **3D printed enclosure:** [to be added]
 - **Tripod mount**  
-  This model was used and the enclosure design follows this choice.
+  This model (link TBA ) was used and the enclosure design follows this choice.
   It also includes a Bluetooth button used to trigger camera control.
 - **Optional future processing unit**
 
@@ -76,9 +76,8 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 
 ## Setup Guide
 
-U## Setup Guide
 
-Use Raspberry Pi Imager with advanced settings before writing the SD cards.
+Use [Raspberry Pi Imager](https://www.raspberrypi.com/software/) with advanced settings before writing the SD cards.
 
 **Hostnames**  
 TVA (unit one)  
@@ -97,7 +96,7 @@ Enabled
 You'll need internet access during setup and first test run.  Set the wifi info in RPi imager to an external Wi Fi network. A mobile hotspot is fine. If you use an iPhone hotspot, rename your Phone. Names like `John's iPhone` contain an apostrophe and the Raspberry Pi will not accept them. Use a simple name such as `John iPhone`.
 
 Allow a few minutes on the first boot.  
-Connect with:
+On a computer connected to the same network, connected to the RPi using:
 
 ```bash
 ssh pi@TVA.local
@@ -106,27 +105,22 @@ ssh pi@TVB.local
 ```
 If hostname lookup fails, find the device IP with a network scanner and connect to that IP instead of using TVA.local.
 
-TODO: fixed IP?
-
 ---
 
 
-```
+After getting connected
 
+```
+sudo apt install git
 git clone [https://github.com/NeuroRehack/TheraView](https://github.com/NeuroRehack/TheraView)
 cd TheraView
 chmod +x scripts/setup.sh
 ./scripts/setup.sh
 ```
 
-### Expected result 
-
-All requirements to be installed
-
-
 ## Usage
 
-**[Placeholder: Usage instructions to be added]**
+**[ instructions to be added]**
 
 ---
 
