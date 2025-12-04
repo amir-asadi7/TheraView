@@ -76,9 +76,53 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 
 ## Setup Guide
 
-**[Placeholder: Detailed setup instructions will be added here]**
+U## Setup Guide
+
+Use Raspberry Pi Imager with advanced settings before writing the SD cards.
+
+**Hostnames**  
+TVA (unit one)  
+TVB (unit two)
+It is important to set these correctly because the setup process depends on them.
+
+**Username**  
+pi
+
+**Password**  
+ritaengs
+
+**SSH**  
+Enabled
+
+You'll need internet access during setup and first test run.  Set the wifi info in RPi imager to an external Wi Fi network. A mobile hotspot is fine. If you use an iPhone hotspot, rename your Phone. Names like `John's iPhone` contain an apostrophe and the Raspberry Pi will not accept them. Use a simple name such as `John iPhone`.
+
+Allow a few minutes on the first boot.  
+Connect with:
+
+```bash
+ssh pi@TVA.local
+#or 
+ssh pi@TVB.local
+```
+If hostname lookup fails, find the device IP with a network scanner and connect to that IP instead of using TVA.local.
+
+TODO: fixed IP?
 
 ---
+
+
+```
+
+git clone [https://github.com/NeuroRehack/TheraView](https://github.com/NeuroRehack/TheraView)
+cd TheraView
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+```
+
+### Expected result 
+
+All requirements to be installed
+
 
 ## Usage
 
