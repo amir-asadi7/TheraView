@@ -18,6 +18,7 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 - Add synchronized start across both units
 - Build a page that displays the two live previews
 - Improve local network coordination
+- Add a auto file transfer system when connected to an external HDD
 
 ### Stage 3: Synchronized Recording and Playback
 - Align timelines between both units
