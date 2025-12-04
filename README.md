@@ -53,21 +53,23 @@ TheraView is a portable two angle capture system for physical therapy and occupa
   Any USB webcam that supports 1080p MJPG at 30 FPS can be used.
 - **Power bank** 10,000 mAh, 22.5 W output (Anker)  
   *Operation duration: [to be tested]*
-- **MicroSD card** 64 GB
+- **MicroSD card** 64 GB , class TBD
 - **Cooling fan for Raspberry Pi**
 - **3D printed enclosure:** [to be added]
 - **Tripod mount**  
   This model (link TBA ) was used and the enclosure design follows this choice.
   It also includes a Bluetooth button used to trigger camera control.
 - **Optional future processing unit**
+- **SD card reader
 
 ---
 
 ## Software
 
 - **Raspberry Pi OS Lite (Bookworm)**  
-  - Version: [placeholder]  
-  - Release date: [placeholder]
+  - file name: 2024-07-04-raspios-bookworm-arm64-lite.img.xz 
+  - Version: bookworm-arm64-lite
+  - Release date: 2024-07-04
 - **GStreamer**  
   - Version: [to be added]
 - To be completed
@@ -79,36 +81,48 @@ TheraView is a portable two angle capture system for physical therapy and occupa
 
 Use [Raspberry Pi Imager](https://www.raspberrypi.com/software/) with advanced settings before writing the SD cards.
 
-**Hostnames**  
-TVA (unit one)  
-TVB (unit two)
-It is important to set these correctly because the setup process depends on them.
+Use the Raspberry Pi Imager with advanced settings before you write the SD cards.
 
-**Username**  
-pi
+### Hostnames
+- **TVA** for unit one  
+- **TVB** for unit two  
 
-**Password**  
-ritaengs
+Set these exactly as shown because the setup process relies on them.
 
-**SSH**  
-Enabled
+### Username
+- **pi**
 
-You'll need internet access during setup and first test run.  Set the wifi info in RPi imager to an external Wi Fi network. A mobile hotspot is fine. If you use an iPhone hotspot, rename your Phone. Names like `John's iPhone` contain an apostrophe and the Raspberry Pi will not accept them. Use a simple name such as `John iPhone`.
+### Password
+- Choose your own secure password.
 
-Allow a few minutes on the first boot.  
-On a computer connected to the same network, connected to the RPi using:
+### Wireless LAN
+The device needs internet access during setup and the first test run, so configure WiFi here. A mobile hotspot works.  
+If you use an iPhone hotspot, rename the phone. Default names such as `John's iPhone` include an apostrophe, which the Raspberry Pi rejects. Use a simple name such as `John iPhone`.
+
+Select the wireless LAN country that matches your location.
+
+### Locale
+Choose your timezone and keyboard layout.
+
+### Services
+- Enable **SSH**  
+- Use **password authentication**
+
+### First Boot
+After the SD card is ready, place it in the Raspberry Pi and power it on.
+
+Allow a few minutes for the first boot, then connect from a computer on the same network:
 
 ```bash
 ssh pi@TVA.local
-#or 
+# or
 ssh pi@TVB.local
 ```
-If hostname lookup fails, find the device IP with a network scanner and connect to that IP instead of using TVA.local.
-
----
+If hostname lookup does not work, find the device IP with a network scanner and connect to that address instead.
 
 
-After getting connected
+
+After you connect to the RPi
 
 ```
 sudo apt install git
@@ -117,6 +131,10 @@ cd TheraView
 chmod +x scripts/setup.sh
 ./scripts/setup.sh
 ```
+
+Note: If you do not want the system to auto start on systemd or set up the hotspot, edit the config file at config/theraview.config and change these flags: ENABLE_SYSTEMD and ENABLE_HOTSPOT
+
+
 
 ## Usage
 

@@ -6,10 +6,9 @@ echo "======================================="
 echo "      TheraView Setup Script
 ======================================="
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
-CONFIG_FILE="$REPO_DIR/config/theraview.conf"
-TV_PATH="$REPO_DIR"
+TV_PATH="$(pwd)"
+HOSTNAME="$(hostname)"
+CONFIG_FILE="config/theraview.conf"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Missing config file: $CONFIG_FILE"
@@ -49,10 +48,10 @@ mkdir -p recordings
 # ---------------------
 # Systemd setup
 # ---------------------
-if [ "$ENABLE_SYSTEMD" = "true" ]; then
-    echo "[6] Setting up systemd service..."
+SERVICE_FILE="/etc/systemd/system/theraview.service"
 
-    SERVICE_FILE="/etc/systemd/system/theraview.service"
+if [ "$ENABLE_SYSTEMD" = "true" ]; then
+    echo "[6] Creating systemd service..."
 
     sudo bash -c "cat > $SERVICE_FILE" << 'EOF'
 [Unit]
@@ -70,24 +69,97 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 EOF
 
-    echo "Systemd service created."
+    sudo systemctl daemon-reload
+    sudo systemctl enable theraview.service
+    sudo systemctl restart theraview.service
+
+    echo "Systemd service active."
+
 else
-    echo "Systemd setup disabled by config."
+    echo "[6] Systemd disabled. Checking for existing service..."
+
+    if [ -f "$SERVICE_FILE" ]; then
+        echo "Service found. Removing it."
+        sudo systemctl stop theraview.service 2>/dev/null || true
+        sudo systemctl disable theraview.service 2>/dev/null || true
+        sudo rm -f "$SERVICE_FILE"
+        sudo systemctl daemon-reload
+        echo "Systemd service removed."
+    else
+        echo "No service found."
+    fi
 fi
+
 
 # ---------------------
 # Hotspot setup
 # ---------------------
-if [ "$ENABLE_HOTSPOT" = "true" ]; then
-    echo "[7] Hotspot setup enabled."
+THERA_NET="TheraView"
+PRECONFIGURED_NET="preconfigured"
 
-    nmcli connection delete TheraView 2>/dev/null || true
+if [ "$ENABLE_HOTSPOT" = "true" ]; then
+    echo "[7] Hotspot enabled."
+
+    nmcli device wifi rescan
 
     if [ "$HOSTNAME" = "TVA" ]; then
-        echo "Detected TVA. Creating hotspot TheraView."
+        echo "TVA detected. Creating hotspot."
 
-        nmcli connection add type wifi ifname "$WIFI_IFACE" con-name TheraView autoconnect yes ssid TheraView
-        nmcli connection modify TheraView wifi.mode ap
-        nmcli connection modify TheraView wifi.band bg
-        nmcli connection modify TheraView wifi.channel 6
-        nmcli conne
+        nmcli connection delete "$THERA_NET" 2>/dev/null || true
+
+        nmcli connection add type wifi ifname "$WIFI_IFACE" \
+            con-name "$THERA_NET" autoconnect yes ssid "$THERA_NET"
+
+        nmcli connection modify "$THERA_NET" wifi.mode ap
+        nmcli connection modify "$THERA_NET" wifi.band bg
+        nmcli connection modify "$THERA_NET" wifi.channel 6
+        nmcli connection modify "$THERA_NET" wifi-sec.key-mgmt wpa-psk
+        nmcli connection modify "$THERA_NET" wifi-sec.psk "ritaengs"
+        nmcli connection modify "$THERA_NET" ipv4.method shared
+
+        nmcli connection up "$THERA_NET"
+
+    elif [ "$HOSTNAME" = "TVB" ]; then
+        echo "TVB detected. Connecting to hotspot."
+
+        nmcli device wifi rescan
+
+        if nmcli device wifi list | grep -q "$THERA_NET"; then
+            nmcli connection delete "$THERA_NET" 2>/dev/null || true
+
+            nmcli connection add type wifi ifname "$WIFI_IFACE" \
+                con-name "$THERA_NET" ssid "$THERA_NET" \
+                wifi-sec.key-mgmt wpa-psk wifi-sec.psk "ritaengs" autoconnect yes
+
+            nmcli connection up "$THERA_NET" || true
+        else
+            echo "Hotspot not visible. Waiting for TVA to broadcast."
+        fi
+
+    else
+        echo "Hostname not TVA or TVB. Skipping hotspot steps."
+    fi
+
+else
+    echo "[7] Hotspot disabled. Removing hotspot profiles if present."
+
+    if nmcli connection show | grep -q "$THERA_NET"; then
+        echo "Removing TheraView connection."
+        nmcli connection delete "$THERA_NET" 2>/dev/null || true
+    fi
+
+    nmcli device wifi rescan
+
+    if nmcli device wifi list | grep -q "$PRECONFIGURED_NET"; then
+        echo "Preconfigured network found. Connecting."
+        nmcli connection up "$PRECONFIGURED_NET" || true
+    else
+        echo "Preconfigured network not found."
+    fi
+fi
+
+
+echo ""
+echo "======================================="
+echo "      TheraView setup complete"
+echo "======================================="
