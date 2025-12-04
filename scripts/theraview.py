@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#! /home/pi/TheraView/venv/bin/python
 import http.server
 import socketserver
 import subprocess
@@ -14,7 +14,7 @@ import socket
 # Settings
 # ----------------------------
 
-CONFIG_FILE = "./config/theraview.config"
+CONFIG_FILE = "/home/pi/TheraView/config/theraview.conf"
     
 def load_config(path):
     cfg = {}
@@ -90,6 +90,21 @@ elif is_TVB():
     PORT = cfg_int("PORT_B", 5002)
 
 
+def get_network_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except:
+        return None
+    finally:
+        s.close()
+
+def get_free_space_gb():
+    st = os.statvfs("/")
+    free_bytes = st.f_bavail * st.f_frsize
+    return free_bytes / (1024 * 1024 * 1024)
+
 # ----------------------------
 # Globals
 # ----------------------------
@@ -97,33 +112,89 @@ proc_lock = threading.Lock()
 preview_proc = None          # preview-only pipeline
 record_proc = None           # record+preview pipeline
 active_record = True         # start in record+preview mode
+current_filename = ""
 
 # ----------------------------
 # HTML
 # ----------------------------
+
 HTML_PAGE = b"""
 <html>
-  <body style="font-family: sans-serif;">
-    <h2>Webcam Control</h2>
+  <body style="font-family: sans-serif; margin: 0; padding: 0; text-align: center;">
 
-    <div id="rec_status" style="font-size: 22px; font-weight: bold; color: red;">
+    <div style="margin-top: 20px;">
+      <img src="/stream" width="640" height="480"
+        style="object-fit: cover; border: 2px solid black; max-width: 95vw; height: auto;">
+    </div>
+
+    <br>
+
+    <div id="rec_status" style="font-size: 28px; font-weight: bold; color: red;">
       Recording active
+    </div>
+
+    <div id="file_name" style="font-size: 22px; margin-top: 8px; color: black;">
     </div>
 
     <br>
 
     <button id="rec_btn"
-      style="font-size: 26px; padding: 14px 32px;"
+      style="
+        font-size: 34px;
+        padding: 24px 50px;
+        width: 80vw;
+        max-width: 420px;
+        border-radius: 14px;
+      "
       onclick="toggleRecord()">
       Stop recording
     </button>
 
     <br><br>
 
-    <img src="/stream" width="640" height="480"
-      style="object-fit: cover; border: 2px solid black;">
+    <button
+      onclick="exitServer()"
+      style="
+        font-size: 30px;
+        padding: 20px 45px;
+        width: 75vw;
+        max-width: 380px;
+        border-radius: 14px;
+        background-color: #333;
+        color: white;
+      "
+    >
+      Exit
+    </button>
+
+    <br><br>
+
+    <div id="mem_status" style="font-size: 20px; margin-top: 8px; color: gray;">
+    </div>
 
     <script>
+      function updateMem() {
+        fetch('/mem', { cache: 'no-store' })
+          .then(r => r.json())
+          .then(data => {
+            document.getElementById("mem_status").innerText =
+              data.free_gb + " GB free";
+          });
+      }
+
+      function updateFilename() {
+        fetch('/filename', { cache: 'no-store' })
+          .then(r => r.json())
+          .then(data => {
+            if (data.name) {
+              const simple = data.name.split('/').pop();
+              document.getElementById("file_name").innerText = simple;
+            } else {
+              document.getElementById("file_name").innerText = "";
+            }
+          });
+      }
+
       function toggleRecord() {
         fetch('/toggle_record', { cache: 'no-store' })
           .then(() => setTimeout(updateStatus, 250));
@@ -135,6 +206,7 @@ HTML_PAGE = b"""
           .then(data => {
             const s = document.getElementById("rec_status");
             const b = document.getElementById("rec_btn");
+
             if (data.record_active) {
               s.innerText = "Recording active";
               s.style.color = "red";
@@ -147,12 +219,28 @@ HTML_PAGE = b"""
           });
       }
 
+      function exitServer() {
+        fetch('/exit', { cache: 'no-store' })
+          .then(() => {
+            alert("Server stopped");
+          });
+      }
+
       setInterval(updateStatus, 1500);
+      setInterval(updateMem, 5000);
+      setInterval(updateFilename, 2000);
+
       updateStatus();
+      updateMem();
+      updateFilename();
     </script>
+
   </body>
 </html>
 """
+
+
+
 
 # ----------------------------
 # Pipelines
@@ -168,9 +256,8 @@ def preview_pipeline():
         "!", "videoscale",
         "!", f"video/x-raw,width={STREAM_WIDTH},height={STREAM_HEIGHT},framerate={FRAMERATE}/1",
         "!", "videoconvert",
-        "!", "timeoverlay", "font-desc=Sans 16", "halignment=right", "valignment=bottom",
-        "!", "clockoverlay", "font-desc=Sans 16", "halignment=left", "valignment=bottom",
-        "!", "textoverlay", f"text={STREAM_TEXT}", "valignment=top", "halignment=right", "font-desc=Sans, 16",
+        "!", "clockoverlay", "font-desc=Sans 16", "halignment=right", "valignment=bottom", "draw-outline=true","color=0xFFFFFFFF","outline-color=0xFF000000",
+        "!", "textoverlay", f"text={STREAM_TEXT}", "valignment=top", "halignment=right", "font-desc=Sans, 16", "draw-outline=true","color=0xFFFFFFFF","outline-color=0xFF000000",
         "!", "jpegenc",
         "!", "multipartmux", "boundary=frame",
         "!", "filesink", "location=/dev/stdout",
@@ -204,9 +291,9 @@ def record_pipeline(filename):
         "!", "videoscale",
         "!", f"video/x-raw,width={STREAM_WIDTH},height={STREAM_HEIGHT},framerate={FRAMERATE}/1",
         "!", "videoconvert",
-        "!", "timeoverlay", "font-desc=Sans 16", "halignment=right", "valignment=bottom",
-        "!", "clockoverlay", "font-desc=Sans 16", "halignment=left", "valignment=bottom",
-        "!", "textoverlay", f"text={STREAM_TEXT}", "valignment=top", "halignment=right", "font-desc=Sans, 16",
+        "!", "timeoverlay", "font-desc=Sans 16", "halignment=left", "valignment=bottom", "color=0xFFFF0000",
+        "!", "clockoverlay", "font-desc=Sans 16", "halignment=right", "valignment=bottom", "draw-outline=true","color=0xFFFFFFFF","outline-color=0xFF000000",
+        "!", "textoverlay", f"text={STREAM_TEXT}", "valignment=top", "halignment=right", "font-desc=Sans, 16", "draw-outline=true","color=0xFFFFFFFF","outline-color=0xFF000000", 
         "!", "jpegenc",
         "!", "multipartmux", "boundary=frame",
         "!", "filesink", "location=/dev/stdout",
@@ -230,10 +317,12 @@ def start_preview_only():
 
 def start_record_plus_preview():
     global record_proc
+    global current_filename
     stop_pipelines()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.join(OUTPUT_DIR, f"{BASENAME_PREFIX}{ts}.mp4")
+    current_filename = os.path.join(OUTPUT_DIR, f"{BASENAME_PREFIX}{ts}.mp4")
+    filename = current_filename
     record_proc = subprocess.Popen(
         record_pipeline(filename),
         stdout=subprocess.PIPE,
@@ -341,6 +430,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     return
             # unreachable
             # return
+            
+        if self.path == "/exit":
+            with proc_lock:
+                stop_pipelines()
+            self._simple(b"Exiting")
+            # stop server after the response is flushed
+            def stop_server():
+                time.sleep(0.3)
+                os._exit(0)
+            threading.Thread(target=stop_server).start()
+            return
+        
+        
+        if self.path == "/mem":
+            free = get_free_space_gb()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"free_gb": round(free, 2)}).encode("utf8"))
+            return
+        if self.path == "/filename":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"name": current_filename}).encode("utf8"))
+            return
 
         self.send_error(404)
 
@@ -349,6 +464,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/plain")
         self.end_headers
         self.wfile.write(msg)
+        
 
 
 # ----------------------------
@@ -356,7 +472,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
 # ----------------------------
 
 with socketserver.ThreadingTCPServer(("0.0.0.0", PORT), Handler) as httpd:
-    print(f"Server on {PORT}")
+    ip = get_network_ip()
+    if ip:
+        print(f"Server reachable at http://{ip}:{PORT}")
+    else:
+        print("No network IP found. Device may not be connected.")
+        
     # start in record+preview mode
     start_record_plus_preview()
     httpd.serve_forever()
