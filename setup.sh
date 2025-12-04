@@ -8,7 +8,7 @@ echo "      TheraView Setup Script
 
 TV_PATH="$(pwd)"
 HOSTNAME="$(hostname)"
-CONFIG_FILE="config/theraview.conf"
+CONFIG_FILE="config.conf"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Missing config file: $CONFIG_FILE"
@@ -59,7 +59,7 @@ Description=TheraView Capture Server
 After=network.target
 
 [Service]
-ExecStart=/home/pi/TheraView/venv/bin/python3 /home/pi/TheraView/theraview.py
+ExecStart=/home/pi/TheraView/scripts/theraview
 WorkingDirectory=/home/pi/TheraView
 User=pi
 Restart=always
