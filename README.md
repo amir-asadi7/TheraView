@@ -115,8 +115,10 @@ Note: If you do not want the system to auto start on systemd or set up the hotsp
 - Install Raspberry Pi OS Lite ✅
 - Verify 1080p at 30 FPS capture with MJPG ✅
 - Add GStreamer preview output to an HTML page ✅
+- Add recording in segments
 - Confirm recording stability 
-- Test power bank duration 
+- Test power bank duration
+- Add status LED(s)
 - Add the first enclosure design
 - Use the Bluetooth button on the tripod mount to trigger camera recording
 - Add an RTC module for reliable time tracking
