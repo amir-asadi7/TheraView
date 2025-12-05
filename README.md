@@ -86,9 +86,9 @@ sudo apt update -y
 sudo apt upgrade -y
 sudo apt install git -y
 
-git clone [https://github.com/NeuroRehack/TheraView](https://github.com/NeuroRehack/TheraView)
+git clone https://github.com/NeuroRehack/TheraView
 cd TheraView
-chmod +x scripts/setup.sh
+sudo chmod +x scripts/setup.sh 
 ./scripts/setup.sh
 ```
 
